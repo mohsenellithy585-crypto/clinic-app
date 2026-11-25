@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b6f6f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>عيادة د. محسن الليثي - سجل المرضى</title>
+<style>
+:root{--teal:#0e8c8c;--teal2:#0b6f6f;--navy:#12294a;--bg:#f2f6f8;--card:#fff;--line:#dde6ea;--red:#c0392b;--green:#1e8e5a;--amber:#d98a00;--mut:#6a7b88}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Noto Sans Arabic","Segoe UI",Tahoma,Arial,sans-serif;background:var(--bg);color:var(--navy);font-size:15px}
+header{background:linear-gradient(90deg,var(--navy),var(--teal2));color:#fff;padding:12px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.logo{width:42px;height:42px;border-radius:12px;background:#fff;color:var(--teal);display:flex;align-items:center;justify-content:center;font-size:24px}
+header h1{font-size:18px;margin:0}header small{opacity:.8;display:block;font-size:12px}
+.sp{flex:1}
+nav{display:flex;gap:6px;flex-wrap:wrap;padding:10px 20px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+nav button{border:0;background:none;padding:9px 16px;border-radius:10px;font:inherit;color:var(--navy);cursor:pointer;font-weight:600}
+nav button.on{background:var(--teal);color:#fff}
+nav button:hover:not(.on){background:#e6f2f2}
+main{max-width:1100px;margin:18px auto;padding:0 16px 40px}
+.grid{display:grid;gap:14px}
+.stats{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.stat{background:var(--card);border-radius:14px;padding:16px;border-inline-start:5px solid var(--teal);box-shadow:0 1px 4px #0001}
+.stat b{display:block;font-size:26px;margin-top:4px}.stat span{color:var(--mut);font-size:13px}
+.stat.warn{border-color:var(--red)}.stat.warn b{color:var(--red)}
+.card{background:var(--card);border-radius:14px;padding:18px;box-shadow:0 1px 4px #0001;margin-bottom:16px}
+h2{margin:0 0 12px;font-size:18px;color:var(--navy)}
+table{width:100%;border-collapse:collapse}
+th,td{padding:9px 8px;text-align:right;border-bottom:1px solid var(--line);font-size:14px}
+th{color:var(--mut);font-weight:600;background:#f7fafb}
+tr.click{cursor:pointer}tr.click:hover{background:#eef7f7}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+label{display:block;font-size:13px;color:var(--mut);margin-bottom:4px}
+input,select,textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:10px;font:inherit;background:#fff;color:var(--navy)}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--teal);border-color:var(--teal)}
+.full{grid-column:1/-1}
+.btn{border:0;border-radius:10px;padding:10px 18px;font:inherit;font-weight:700;cursor:pointer;background:var(--teal);color:#fff}
+.btn:hover{background:var(--teal2)}
+.btn.sec{background:#e6eef1;color:var(--navy)}.btn.red{background:var(--red)}.btn.sm{padding:5px 11px;font-size:13px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.tag{display:inline-block;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:700}
+.t-red{background:#fbe3e0;color:var(--red)}.t-green{background:#dff3e8;color:var(--green)}.t-amber{background:#fdf0d5;color:var(--amber)}
+.big{font-size:17px;padding:13px}
+.empty{text-align:center;color:var(--mut);padding:24px}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.kv div{background:#f7fafb;border-radius:10px;padding:10px}.kv small{color:var(--mut);display:block;font-size:12px}
+.bal{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}.bal div{flex:1;min-width:130px;background:#f7fafb;border-radius:10px;padding:10px;text-align:center}.bal b{display:block;font-size:20px}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:10px 22px;border-radius:99px;opacity:0;transition:.3s;pointer-events:none;z-index:20}
+#toast.show{opacity:1}
+#printcard{display:none}
+.num{direction:ltr;unicode-bidi:embed;display:inline-block}
+@media print{
+ body{background:#fff}header,nav,main{display:none!important}
+ #printcard{display:block!important;padding:20px}
+ .pc{border:2px solid var(--teal);border-radius:14px;padding:22px;max-width:640px;margin:auto}
+ .pc h1{color:var(--teal);margin:0 0 4px}.pc hr{border:0;border-top:2px solid var(--teal);margin:10px 0}
+ .pc table th{background:#fff}
+}
+@media(max-width:640px){
+ body{font-size:16px}
+ header{padding:10px 12px;gap:8px}header h1{font-size:16px}
+ header .btn{flex:1;min-height:44px}
+ nav{flex-wrap:nowrap;overflow-x:auto;padding:8px 10px;-webkit-overflow-scrolling:touch}
+ nav button{white-space:nowrap;min-height:44px;padding:8px 14px}
+ main{margin:12px auto;padding:0 10px 40px}
+ .stats{grid-template-columns:1fr 1fr}.stat{padding:12px}.stat b{font-size:22px}
+ .card{padding:12px;overflow-x:auto}
+ table{min-width:480px}
+ .form,.kv{grid-template-columns:1fr}
+ input,select,textarea{font-size:16px;padding:12px;min-height:46px}
+ .btn{min-height:44px;padding:11px 16px}.btn.sm{min-height:40px;padding:8px 12px}
+ .bal div{min-width:100px}
+}
+</style>
+</head>
+<body>
+<header>
+ <div class="logo">🦷</div>
+ <div><h1>عيادة د. محسن الليثي لطب الأسنان</h1><small>ميت غمر - سجل المرضى والمواعيد</small></div>
+ <div class="sp"></div>
+ <button class="btn sec sm" onclick="exportData()">⬇ نسخة احتياطية</button>
+ <button class="btn sec sm" onclick="document.getElementById('imp').click()">⬆ استرجاع</button>
+ <input type="file" id="imp" accept=".json,application/json" hidden onchange="importData(this)">
+</header>
+<nav id="nav"></nav>
+<main id="app"></main>
+<div id="printcard"></div>
+<div id="toast"></div>
+<script>
+const KEY='clinic_mg_v1';
+let DB=load();
+let view='dash', pid=null, q='';
+function load(){try{const d=JSON.parse(localStorage.getItem(KEY));if(d&&d.patients)return d}catch(e){}return{patients:[],visits:[],appts:[]}}
+function save(){localStorage.setItem(KEY,JSON.stringify(DB))}
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const pad=n=>String(n).padStart(2,'0');
+const fmt=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const today=()=>fmt(new Date());
+const addDays=(s,n)=>{const d=new Date(s+'T00:00:00');d.setDate(d.getDate()+n);return fmt(d)};
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money=n=>(Math.round(n)||0).toLocaleString('en-US')+' ج';
+const nd=s=>String(s).replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
+const dshow=s=>s?`<span class="num">${esc(s)}</span>`:'-';
+const P=id=>DB.patients.find(p=>p.id===id);
+const vOf=id=>DB.visits.filter(v=>v.pid===id).sort((a,b)=>b.date.localeCompare(a.date));
+const bal=id=>{const v=vOf(id);const c=v.reduce((a,x)=>a+x.charged,0),p=v.reduce((a,x)=>a+x.paid,0);return{c,p,r:c-p}};
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200)}
+function go(v,id){view=v;if(id!==undefined)pid=id;render();window.scrollTo(0,0)}
+
+const TABS=[['dash','🏠 الرئيسية'],['today','📅 مواعيد النهاردة'],['patients','👥 المرضى'],['recall','🔔 المتابعات'],['new','➕ مريض جديد']];
+function render(){
+ document.getElementById('nav').innerHTML=TABS.map(([k,l])=>`<button class="${view===k||(view==='profile'&&k==='patients')?'on':''}" onclick="go('${k}')">${l}</button>`).join('');
+ const a=document.getElementById('app');
+ a.innerHTML=({dash:vDash,today:vToday,patients:vPatients,recall:vRecall,new:()=>vForm(null),edit:()=>vForm(P(pid)),profile:vProfile})[view]();
+ if(view==='patients'){const s=document.getElementById('q');s.focus();s.setSelectionRange(s.value.length,s.value.length)}
+}
+
+function vDash(){
+ const t=today(),m=t.slice(0,7);
+ const vm=DB.visits.filter(v=>v.date.startsWith(m));
+ const coll=vm.reduce((a,v)=>a+v.paid,0);
+ const out=DB.patients.reduce((a,p)=>a+Math.max(0,bal(p.id).r),0);
+ const due=recallList().length;
+ const ta=DB.appts.filter(x=>x.date===t&&!x.done);
+ return `<div class="grid stats">
+ <div class="stat"><span>إجمالي المرضى</span><b id="c-pat">${DB.patients.length}</b></div>
+ <div class="stat"><span>زيارات الشهر ده</span><b id="c-vis">${vm.length}</b></div>
+ <div class="stat"><span>المحصّل الشهر ده</span><b id="c-col">${money(coll)}</b></div>
+ <div class="stat warn"><span>مبالغ متبقية على المرضى</span><b id="c-out">${money(out)}</b></div>
+ <div class="stat"><span>متابعات مستحقة / متأخرة</span><b id="c-due">${due}</b></div>
+ </div>
+ <div class="card" style="margin-top:16px"><div class="row"><h2 class="sp">مواعيد النهاردة (${ta.length})</h2><button class="btn sm" onclick="go('today')">عرض الكل</button></div>${apptTable(ta,false)}</div>
+ <div class="card"><div class="row"><h2 class="sp">أقرب متابعات</h2><button class="btn sm" onclick="go('recall')">عرض الكل</button></div>${recallTable(recallList().slice(0,5))}</div>`;
+}
+
+function apptTable(list,actions){
+ if(!list.length)return '<div class="empty">مفيش مواعيد</div>';
+ list=[...list].sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+ return `<table><tr><th>الوقت</th><th>المريض</th><th>السبب</th><th>الحالة</th>${actions?'<th></th>':''}</tr>`+list.map(x=>{const p=P(x.pid);return `<tr><td>${dshow(x.time)}</td><td><a href="#" onclick="go('profile','${x.pid}');return false">${esc(p?p.name:'؟')}</a></td><td>${esc(x.reason)}</td><td>${x.done?'<span class="tag t-green">تم</span>':'<span class="tag t-amber">منتظر</span>'}</td>${actions?`<td class="row"><button class="btn sm sec" onclick="toggleAppt('${x.id}')">${x.done?'رجّع':'تم'}</button><button class="btn sm red" onclick="delAppt('${x.id}')">حذف</button></td>`:''}</tr>`}).join('')+'</table>';
+}
+let apptDate=null;
+function vToday(){
+ const d=apptDate||today();
+ const list=DB.appts.filter(x=>x.date===d);
+ const opts=DB.patients.slice().sort((a,b)=>a.name.localeCompare(b.name,'ar')).map(p=>`<option value="${p.id}">${esc(p.name)} - ${esc(p.phone)}</option>`).join('');
+ return `<div class="card"><h2>إضافة موعد</h2>
+ <div class="form"><div><label>المريض</label><select id="a-p">${opts||'<option value="">سجّل مريض الأول</option>'}</select></div>
+ <div><label>التاريخ</label><input type="date" id="a-d" value="${d}"></div>
+ <div><label>الوقت</label><input type="time" id="a-t" value="10:00"></div>
+ <div><label>السبب</label><input id="a-r" placeholder="كشف / تنظيف / حشو..."></div></div>
+ <p><button class="btn" onclick="addAppt()">حفظ الموعد</button></p></div>
+ <div class="card"><div class="row"><h2 class="sp">مواعيد يوم</h2><input type="date" style="width:auto" value="${d}" onchange="apptDate=this.value;render()"><button class="btn sm sec" onclick="apptDate=null;render()">النهاردة</button></div>${apptTable(list,true)}</div>`;
+}
+function addAppt(){
+ const p=document.getElementById('a-p').value,d=document.getElementById('a-d').value,t=document.getElementById('a-t').value,r=document.getElementById('a-r').value.trim();
+ if(!p||!d||!t){toast('اختار المريض والتاريخ والوقت');return}
+ DB.appts.push({id:uid(),pid:p,date:d,time:t,reason:r||'كشف',done:false});save();apptDate=d;toast('تم حفظ الموعد');render();
+}
+function toggleAppt(id){const x=DB.appts.find(a=>a.id===id);x.done=!x.done;save();render()}
+function delAppt(id){if(confirm('حذف الموعد؟')){DB.appts=DB.appts.filter(a=>a.id!==id);save();render()}}
+
+function vPatients(){
+ const qq=nd(q).trim().toLowerCase();
+ let l=DB.patients.filter(p=>!qq||p.name.toLowerCase().includes(qq)||nd(p.phone).includes(qq));
+ l.sort((a,b)=>a.name.localeCompare(b.name,'ar'));
+ return `<div class="card"><div class="row"><input id="q" class="big sp" placeholder="🔍 ابحث بالاسم أو رقم التليفون..." value="${esc(q)}" oninput="q=this.value;render()"><button class="btn big" onclick="go('new')">➕ مريض جديد</button></div></div>
+ <div class="card"><h2>المرضى (${l.length})</h2>${l.length?`<table id="ptable"><tr><th>الاسم</th><th>التليفون</th><th>المنطقة</th><th>المتبقي</th><th>المتابعة</th></tr>`+l.map(p=>{const b=bal(p.id);return `<tr class="click" onclick="go('profile','${p.id}')"><td><b>${esc(p.name)}</b></td><td>${dshow(p.phone)}</td><td>${esc(p.area)||'-'}</td><td>${b.r>0?`<span class="tag t-red">${money(b.r)}</span>`:'<span class="tag t-green">خالص</span>'}</td><td>${dshow(p.recall)}</td></tr>`}).join('')+'</table>':'<div class="empty">مفيش نتائج</div>'}</div>`;
+}
+
+function vForm(p){
+ const e=!!p;p=p||{name:'',phone:'',age:'',gender:'ذكر',area:'',notes:'',firstVisit:today(),recall:''};
+ return `<div class="card"><h2>${e?'تعديل بيانات المريض':'تسجيل مريض جديد'}</h2><div class="form">
+ <div><label>الاسم بالكامل *</label><input id="f-name" value="${esc(p.name)}"></div>
+ <div><label>رقم التليفون *</label><input id="f-phone" inputmode="tel" value="${esc(p.phone)}"></div>
+ <div><label>السن</label><input id="f-age" type="number" min="0" max="120" value="${esc(p.age)}"></div>
+ <div><label>النوع</label><select id="f-gender"><option ${p.gender==='ذكر'?'selected':''}>ذكر</option><option ${p.gender==='أنثى'?'selected':''}>أنثى</option></select></div>
+ <div><label>العنوان / المنطقة</label><input id="f-area" value="${esc(p.area)}" placeholder="مثال: ميت غمر - حي الشرق"></div>
+ <div><label>تاريخ أول زيارة</label><input id="f-first" type="date" value="${esc(p.firstVisit)}"></div>
+ <div><label>موعد المتابعة القادمة (Recall)</label><input id="f-recall" type="date" value="${esc(p.recall)}"></div>
+ <div class="full"><label>ملاحظات (حساسية، أمراض مزمنة، أدوية...)</label><textarea id="f-notes" rows="3">${esc(p.notes)}</textarea></div></div>
+ <p class="row"><button class="btn" onclick="savePatient(${e?`'${p.id}'`:'null'})">💾 حفظ</button><button class="btn sec" onclick="go('${e?'profile':'patients'}')">إلغاء</button></p></div>`;
+}
+function savePatient(id){
+ const g=i=>document.getElementById(i).value.trim();
+ const name=g('f-name'),phone=nd(g('f-phone'));
+ if(!name||!phone){toast('الاسم والتليفون مطلوبين');return}
+ const dup=DB.patients.find(p=>p.phone===phone&&p.id!==id);
+ if(dup&&!confirm('الرقم ده مسجل باسم '+dup.name+'. تكمل؟'))return;
+ const o={name,phone,age:nd(g('f-age')),gender:g('f-gender'),area:g('f-area'),notes:g('f-notes'),firstVisit:g('f-first'),recall:g('f-recall')};
+ if(id){Object.assign(P(id),o)}else{id=uid();DB.patients.push({id,...o})}
+ save();toast('تم الحفظ');go('profile',id);
+}
+
+function vProfile(){
+ const p=P(pid);if(!p)return '<div class="empty">المريض مش موجود</div>';
+ const b=bal(pid),vs=vOf(pid);
+ return `<div class="card"><div class="row"><h2 class="sp">${esc(p.name)}</h2>
+ <button class="btn sm" onclick="printCard('${p.id}')">🖨 طباعة الكارت</button><button class="btn sm sec" onclick="go('edit')">✏ تعديل</button><button class="btn sm red" onclick="delPatient('${p.id}')">حذف</button></div>
+ <div class="kv"><div><small>التليفون</small>${dshow(p.phone)}</div><div><small>السن / النوع</small>${esc(p.age)||'-'} / ${esc(p.gender)}</div><div><small>المنطقة</small>${esc(p.area)||'-'}</div><div><small>أول زيارة</small>${dshow(p.firstVisit)}</div><div><small>المتابعة القادمة</small>${dshow(p.recall)} ${recallTag(p.recall)}</div><div class="full" style="grid-column:1/-1"><small>ملاحظات</small>${esc(p.notes)||'-'}</div></div>
+ <div class="row" style="margin-top:12px"><label style="margin:0">حدد متابعة بعد:</label>
+ <button class="btn sm sec" onclick="setRecall(1)">شهر</button><button class="btn sm sec" onclick="setRecall(3)">3 شهور</button><button class="btn sm sec" onclick="setRecall(6)">6 شهور</button><button class="btn sm sec" onclick="setRecall(12)">سنة</button><button class="btn sm sec" onclick="setRecall(0)">إلغاء</button></div></div>
+ <div class="card"><h2>الحساب</h2><div class="bal"><div><small>إجمالي المطلوب</small><b>${money(b.c)}</b></div><div><small>إجمالي المدفوع</small><b style="color:var(--green)">${money(b.p)}</b></div><div><small>المتبقي</small><b style="color:${b.r>0?'var(--red)':'var(--green)'}">${money(b.r)}</b></div></div></div>
+ <div class="card"><h2>إضافة زيارة</h2><div class="form">
+ <div><label>التاريخ</label><input type="date" id="v-d" value="${today()}"></div>
+ <div><label>الإجراء</label><input id="v-p" placeholder="كشف / حشو / عصب / تنظيف..."></div>
+ <div><label>المبلغ المطلوب</label><input id="v-c" type="number" min="0" value=""></div>
+ <div><label>المبلغ المدفوع</label><input id="v-m" type="number" min="0" value=""></div>
+ <div class="full"><label>ملاحظات</label><input id="v-n"></div></div>
+ <p><button class="btn" onclick="addVisit()">💾 حفظ الزيارة</button></p></div>
+ <div class="card"><h2>سجل الزيارات (${vs.length})</h2>${vs.length?`<table><tr><th>التاريخ</th><th>الإجراء</th><th>المطلوب</th><th>المدفوع</th><th>الباقي</th><th>ملاحظات</th><th></th></tr>`+vs.map(v=>`<tr><td>${dshow(v.date)}</td><td>${esc(v.proc)}</td><td>${money(v.charged)}</td><td>${money(v.paid)}</td><td>${v.charged-v.paid>0?`<span class="tag t-red">${money(v.charged-v.paid)}</span>`:'-'}</td><td>${esc(v.notes)}</td><td class="row">${v.charged-v.paid>0?`<button class="btn sm sec" onclick="payRest('${v.id}')">سدد الباقي</button>`:''}<button class="btn sm red" onclick="delVisit('${v.id}')">✕</button></td></tr>`).join('')+'</table>':'<div class="empty">لسه مفيش زيارات</div>'}</div>`;
+}
+function addVisit(){
+ const g=i=>document.getElementById(i).value.trim();
+ const proc=g('v-p');if(!proc){toast('اكتب الإجراء');return}
+ DB.visits.push({id:uid(),pid,date:g('v-d')||today(),proc,charged:+nd(g('v-c'))||0,paid:+nd(g('v-m'))||0,notes:g('v-n')});
+ save();toast('تم حفظ الزيارة');render();
+}
+function payRest(id){const v=DB.visits.find(x=>x.id===id);const r=v.charged-v.paid;const s=prompt('المبلغ المدفوع الآن (المتبقي '+r+')',r);if(s===null)return;const n=+nd(s);if(n>0){v.paid+=n;save();toast('تم تسجيل الدفع');render()}}
+function delVisit(id){if(confirm('حذف الزيارة؟')){DB.visits=DB.visits.filter(v=>v.id!==id);save();render()}}
+function delPatient(id){if(confirm('حذف المريض وكل زياراته ومواعيده نهائياً؟')){DB.patients=DB.patients.filter(p=>p.id!==id);DB.visits=DB.visits.filter(v=>v.pid!==id);DB.appts=DB.appts.filter(a=>a.pid!==id);save();go('patients')}}
+function setRecall(m){const p=P(pid);if(!m)p.recall='';else{const d=new Date();d.setMonth(d.getMonth()+m);p.recall=fmt(d)}save();toast(m?'تم تحديد المتابعة':'تم إلغاء المتابعة');render()}
+
+function recallTag(r){if(!r)return '';const t=today();if(r<t)return '<span class="tag t-red">متأخر</span>';if(r<=addDays(t,7))return '<span class="tag t-amber">الأسبوع ده</span>';return ''}
+function recallList(){const e=addDays(today(),7);return DB.patients.filter(p=>p.recall&&p.recall<=e).sort((a,b)=>a.recall.localeCompare(b.recall))}
+function recallTable(l){
+ if(!l.length)return '<div class="empty">مفيش متابعات مستحقة 👌</div>';
+ return `<table><tr><th>المريض</th><th>التليفون</th><th>موعد المتابعة</th><th>الحالة</th><th></th></tr>`+l.map(p=>`<tr><td><a href="#" onclick="go('profile','${p.id}');return false"><b>${esc(p.name)}</b></a></td><td>${dshow(p.phone)}</td><td>${dshow(p.recall)}</td><td>${recallTag(p.recall)}</td><td class="row"><a class="btn sm" href="tel:${esc(p.phone)}" style="text-decoration:none">📞 اتصل</a><button class="btn sm sec" onclick="recallDone('${p.id}')">تم التواصل</button></td></tr>`).join('')+'</table>';
+}
+function recallDone(id){const p=P(id);const d=new Date();d.setMonth(d.getMonth()+6);const s=prompt('موعد المتابعة الجاية (YYYY-MM-DD) - سيبها فاضية لو مفيش',fmt(d));if(s===null)return;p.recall=/^\d{4}-\d{2}-\d{2}$/.test(nd(s.trim()))?nd(s.trim()):'';save();toast('تم');render()}
+function vRecall(){
+ const t=today(),l=recallList(),o=l.filter(p=>p.recall<t),w=l.filter(p=>p.recall>=t);
+ return `<div class="card"><h2>🔴 متأخرة (${o.length})</h2>${recallTable(o)}</div><div class="card"><h2>🟠 مستحقة خلال 7 أيام (${w.length})</h2>${recallTable(w)}</div>`;
+}
+
+function printCard(id){
+ const p=P(id),b=bal(id),vs=vOf(id).slice(0,12);
+ document.getElementById('printcard').innerHTML=`<div class="pc"><h1>🦷 عيادة د. محسن الليثي لطب الأسنان</h1><div>ميت غمر - الدقهلية</div><hr>
+ <h2>${esc(p.name)}</h2><p>التليفون: <span class="num">${esc(p.phone)}</span> | السن: ${esc(p.age)||'-'} | النوع: ${esc(p.gender)}<br>المنطقة: ${esc(p.area)||'-'} | أول زيارة: ${esc(p.firstVisit)||'-'}<br>المتابعة القادمة: ${esc(p.recall)||'-'}<br>ملاحظات: ${esc(p.notes)||'-'}</p><hr>
+ <table><tr><th>التاريخ</th><th>الإجراء</th><th>المطلوب</th><th>المدفوع</th></tr>${vs.map(v=>`<tr><td>${esc(v.date)}</td><td>${esc(v.proc)}</td><td>${v.charged}</td><td>${v.paid}</td></tr>`).join('')}</table>
+ <p><b>الإجمالي: ${b.c} | المدفوع: ${b.p} | المتبقي: ${b.r}</b></p></div>`;
+ setTimeout(()=>window.print(),100);
+}
+
+function exportData(){
+ const blob=new Blob([JSON.stringify({app:'clinic-mg',exported:new Date().toISOString(),...DB},null,1)],{type:'application/json'});
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='clinic-backup-'+today()+'.json';document.body.appendChild(a);a.click();a.remove();toast('تم تنزيل النسخة الاحتياطية');
+}
+function importData(inp){
+ const f=inp.files[0];if(!f)return;const r=new FileReader();
+ r.onload=()=>{try{const d=JSON.parse(r.result);if(!Array.isArray(d.patients)||!Array.isArray(d.visits))throw 0;
+  if(!confirm('هيتم استبدال كل البيانات الحالية ببيانات النسخة ('+d.patients.length+' مريض). تكمل؟')){inp.value='';return}
+  DB={patients:d.patients,visits:d.visits,appts:d.appts||[]};save();toast('تم الاسترجاع');go('dash')}catch(e){alert('الملف مش نسخة احتياطية صحيحة')}inp.value=''};
+ r.readAsText(f);
+}
+render();
+</script>
+</body>
+</html>
