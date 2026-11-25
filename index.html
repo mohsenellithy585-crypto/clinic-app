@@ -7,6 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>عيادة د. محسن الليثي - سجل المرضى</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
 :root{--teal:#0e8c8c;--teal2:#0b6f6f;--navy:#12294a;--bg:#f2f6f8;--card:#fff;--line:#dde6ea;--red:#c0392b;--green:#1e8e5a;--amber:#d98a00;--mut:#6a7b88}
 *{box-sizing:border-box}
@@ -73,6 +74,18 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--teal);border-col
  .btn{min-height:44px;padding:11px 16px}.btn.sm{min-height:40px;padding:8px 12px}
  .bal div{min-width:100px}
 }
+
+#login{position:fixed;inset:0;z-index:50;background:linear-gradient(160deg,var(--navy),var(--teal2));display:none;align-items:center;justify-content:center;padding:20px}
+#login .box{background:#fff;border-radius:18px;padding:28px 24px;width:100%;max-width:380px;box-shadow:0 10px 40px #0004;text-align:center}
+#login .lg{width:64px;height:64px;border-radius:18px;background:#e6f2f2;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:34px}
+#login h1{font-size:19px;margin:0 0 4px;color:var(--navy)}#login small{color:var(--mut);display:block;margin-bottom:18px}
+#login label{display:block;text-align:right;font-size:13px;color:var(--mut);margin:10px 0 4px}
+#login input{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;font:inherit;direction:ltr;text-align:left}
+#login button{width:100%;margin-top:18px;padding:13px;border:0;border-radius:10px;background:var(--teal);color:#fff;font:inherit;font-weight:700;font-size:16px;cursor:pointer}
+#login button:disabled{opacity:.6}
+#lerr{color:var(--red);font-size:13px;min-height:18px;margin-top:10px}
+#syncdot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#7bd88f;margin-inline-end:4px}
+#syncdot.off{background:#e0a030}
 </style>
 </head>
 <body>
@@ -80,6 +93,8 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--teal);border-col
  <div class="logo">🦷</div>
  <div><h1>عيادة د. محسن الليثي لطب الأسنان</h1><small>ميت غمر - سجل المرضى والمواعيد</small></div>
  <div class="sp"></div>
+ <span id="who" style="font-size:12px;opacity:.9"></span>
+ <button class="btn sec sm" onclick="doLogout()">خروج</button>
  <button class="btn sec sm" onclick="exportData()">⬇ نسخة احتياطية</button>
  <button class="btn sec sm" onclick="document.getElementById('imp').click()">⬆ استرجاع</button>
  <input type="file" id="imp" accept=".json,application/json" hidden onchange="importData(this)">
@@ -88,13 +103,68 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--teal);border-col
 <main id="app"></main>
 <div id="printcard"></div>
 <div id="toast"></div>
+<div id="login"><form class="box" onsubmit="doLogin(event)">
+ <div class="lg">🦷</div><h1>عيادة د. محسن الليثي</h1><small>تسجيل الدخول لسجل المرضى</small>
+ <label>البريد الإلكتروني</label><input id="l-email" type="email" autocomplete="username" required>
+ <label>كلمة المرور</label><input id="l-pass" type="password" autocomplete="current-password" required>
+ <button id="l-btn" type="submit">دخول</button><div id="lerr"></div>
+</form></div>
 <script>
-const KEY='clinic_mg_v1';
-let DB=load();
+const SB_URL='https://ccbksaozzikwahajamed.supabase.co',SB_KEY='sb_publishable_LC9MK9CKTPbZZRgol0ct-Q_73vKzdB2';
+const sb=supabase.createClient(SB_URL,SB_KEY);
+let DB={patients:[],visits:[],appts:[]};
 let view='dash', pid=null, q='';
-function load(){try{const d=JSON.parse(localStorage.getItem(KEY));if(d&&d.patients)return d}catch(e){}return{patients:[],visits:[],appts:[]}}
-function save(){localStorage.setItem(KEY,JSON.stringify(DB))}
-const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const toP=r=>({id:r.id,name:r.name,phone:r.phone,age:r.age||'',gender:r.gender||'ذكر',area:r.area||'',notes:r.notes||'',firstVisit:r.first_visit||'',recall:r.recall||''});
+const fromP=p=>({name:p.name,phone:p.phone,age:p.age||'',gender:p.gender||'ذكر',area:p.area||'',notes:p.notes||'',first_visit:p.firstVisit||null,recall:p.recall||null});
+const toV=r=>({id:r.id,pid:r.patient_id,date:r.date,proc:r.proc,charged:+r.charged||0,paid:+r.paid||0,notes:r.notes||''});
+const fromV=v=>({patient_id:v.pid,date:v.date,proc:v.proc,charged:v.charged,paid:v.paid,notes:v.notes||''});
+const toA=r=>({id:r.id,pid:r.patient_id,date:r.date,time:(r.time||'').slice(0,5),reason:r.reason||'',done:!!r.done});
+const fromA=a=>({patient_id:a.pid,date:a.date,time:a.time,reason:a.reason||'',done:!!a.done});
+const T={patients:['patients',toP],visits:['visits',toV],appts:['appts',toA]};
+async function fetchAll(t){let out=[],from=0;for(;;){const {data,error}=await sb.from(t).select('*').order('created_at').range(from,from+999);if(error)throw error;out=out.concat(data);if(data.length<1000)break;from+=1000}return out}
+async function loadAll(){
+ try{const [p,v,a]=await Promise.all([fetchAll('patients'),fetchAll('visits'),fetchAll('appts')]);
+  DB={patients:p.map(toP),visits:v.map(toV),appts:a.map(toA)};setDot(true);softRender(true)}
+ catch(e){setDot(false);toast('مفيش اتصال بالسيرفر')}
+}
+function setDot(ok){const d=document.getElementById('syncdot');if(d)d.className=ok?'':'off'}
+async function db(p){const r=await p;if(r.error){toast('حصلت مشكلة: '+r.error.message);await loadAll();return false}return true}
+let rt=null;
+function softRender(force){
+ clearTimeout(rt);rt=setTimeout(()=>{
+  const a=document.activeElement;
+  if(!force){if(view==='new'||view==='edit')return;if(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)&&a.id!=='q')return}
+  render()},force?0:150)
+}
+function applyChange(t,pl){
+ const [k,conv]=T[t];const arr=DB[k];
+ if(pl.eventType==='DELETE'){const id=pl.old.id;DB[k]=arr.filter(x=>x.id!==id)}
+ else{const o=conv(pl.new);const i=arr.findIndex(x=>x.id===o.id);if(i>=0)arr[i]=o;else arr.push(o)}
+ softRender()
+}
+let chan=null;
+function subscribe(){
+ if(chan)sb.removeChannel(chan);
+ chan=sb.channel('clinic');
+ for(const t of Object.keys(T))chan.on('postgres_changes',{event:'*',schema:'public',table:t},pl=>applyChange(t,pl));
+ chan.subscribe(st=>{if(st==='SUBSCRIBED'){setDot(true);loadAll()}else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT'||st==='CLOSED')setDot(false)});
+}
+async function startApp(session){
+ document.getElementById('login').style.display='none';
+ document.getElementById('who').innerHTML='<span id="syncdot"></span>'+esc(session.user.email);
+ await loadAll();subscribe();
+ clearInterval(window._poll);window._poll=setInterval(()=>{if(!document.hidden)loadAll()},60000);
+}
+async function doLogin(e){
+ e.preventDefault();const b=document.getElementById('l-btn'),er=document.getElementById('lerr');b.disabled=true;er.textContent='';
+ const {data,error}=await sb.auth.signInWithPassword({email:document.getElementById('l-email').value.trim(),password:document.getElementById('l-pass').value});
+ b.disabled=false;
+ if(error){er.textContent=/Invalid login/i.test(error.message)?'البريد أو كلمة المرور غلط':'مشكلة في الاتصال، جرب تاني';return}
+ document.getElementById('l-pass').value='';startApp(data.session)
+}
+async function doLogout(){if(!confirm('تسجيل الخروج؟'))return;if(chan)sb.removeChannel(chan);clearInterval(window._poll);await sb.auth.signOut();DB={patients:[],visits:[],appts:[]};document.getElementById('login').style.display='flex'}
+sb.auth.onAuthStateChange(ev=>{if(ev==='SIGNED_OUT'){document.getElementById('login').style.display='flex'}});
+const uid=()=>crypto.randomUUID();
 const pad=n=>String(n).padStart(2,'0');
 const fmt=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
 const today=()=>fmt(new Date());
@@ -156,10 +226,10 @@ function vToday(){
 function addAppt(){
  const p=document.getElementById('a-p').value,d=document.getElementById('a-d').value,t=document.getElementById('a-t').value,r=document.getElementById('a-r').value.trim();
  if(!p||!d||!t){toast('اختار المريض والتاريخ والوقت');return}
- DB.appts.push({id:uid(),pid:p,date:d,time:t,reason:r||'كشف',done:false});save();apptDate=d;toast('تم حفظ الموعد');render();
+ const o={id:uid(),pid:p,date:d,time:t,reason:r||'كشف',done:false};DB.appts.push(o);db(sb.from('appts').insert({id:o.id,...fromA(o)}));apptDate=d;toast('تم حفظ الموعد');render();
 }
-function toggleAppt(id){const x=DB.appts.find(a=>a.id===id);x.done=!x.done;save();render()}
-function delAppt(id){if(confirm('حذف الموعد؟')){DB.appts=DB.appts.filter(a=>a.id!==id);save();render()}}
+function toggleAppt(id){const x=DB.appts.find(a=>a.id===id);x.done=!x.done;db(sb.from('appts').update({done:x.done}).eq('id',id));render()}
+function delAppt(id){if(confirm('حذف الموعد؟')){DB.appts=DB.appts.filter(a=>a.id!==id);db(sb.from('appts').delete().eq('id',id));render()}}
 
 function vPatients(){
  const qq=nd(q).trim().toLowerCase();
@@ -189,8 +259,8 @@ function savePatient(id){
  const dup=DB.patients.find(p=>p.phone===phone&&p.id!==id);
  if(dup&&!confirm('الرقم ده مسجل باسم '+dup.name+'. تكمل؟'))return;
  const o={name,phone,age:nd(g('f-age')),gender:g('f-gender'),area:g('f-area'),notes:g('f-notes'),firstVisit:g('f-first'),recall:g('f-recall')};
- if(id){Object.assign(P(id),o)}else{id=uid();DB.patients.push({id,...o})}
- save();toast('تم الحفظ');go('profile',id);
+ if(id){Object.assign(P(id),o);db(sb.from('patients').update(fromP(o)).eq('id',id))}else{id=uid();DB.patients.push({id,...o});db(sb.from('patients').insert({id,...fromP(o)}))}
+ toast('تم الحفظ');go('profile',id);
 }
 
 function vProfile(){
@@ -214,13 +284,13 @@ function vProfile(){
 function addVisit(){
  const g=i=>document.getElementById(i).value.trim();
  const proc=g('v-p');if(!proc){toast('اكتب الإجراء');return}
- DB.visits.push({id:uid(),pid,date:g('v-d')||today(),proc,charged:+nd(g('v-c'))||0,paid:+nd(g('v-m'))||0,notes:g('v-n')});
- save();toast('تم حفظ الزيارة');render();
+ const o={id:uid(),pid,date:g('v-d')||today(),proc,charged:+nd(g('v-c'))||0,paid:+nd(g('v-m'))||0,notes:g('v-n')};DB.visits.push(o);db(sb.from('visits').insert({id:o.id,...fromV(o)}));
+ toast('تم حفظ الزيارة');render();
 }
-function payRest(id){const v=DB.visits.find(x=>x.id===id);const r=v.charged-v.paid;const s=prompt('المبلغ المدفوع الآن (المتبقي '+r+')',r);if(s===null)return;const n=+nd(s);if(n>0){v.paid+=n;save();toast('تم تسجيل الدفع');render()}}
-function delVisit(id){if(confirm('حذف الزيارة؟')){DB.visits=DB.visits.filter(v=>v.id!==id);save();render()}}
-function delPatient(id){if(confirm('حذف المريض وكل زياراته ومواعيده نهائياً؟')){DB.patients=DB.patients.filter(p=>p.id!==id);DB.visits=DB.visits.filter(v=>v.pid!==id);DB.appts=DB.appts.filter(a=>a.pid!==id);save();go('patients')}}
-function setRecall(m){const p=P(pid);if(!m)p.recall='';else{const d=new Date();d.setMonth(d.getMonth()+m);p.recall=fmt(d)}save();toast(m?'تم تحديد المتابعة':'تم إلغاء المتابعة');render()}
+function payRest(id){const v=DB.visits.find(x=>x.id===id);const r=v.charged-v.paid;const s=prompt('المبلغ المدفوع الآن (المتبقي '+r+')',r);if(s===null)return;const n=+nd(s);if(n>0){v.paid+=n;db(sb.from('visits').update({paid:v.paid}).eq('id',id));toast('تم تسجيل الدفع');render()}}
+function delVisit(id){if(confirm('حذف الزيارة؟')){DB.visits=DB.visits.filter(v=>v.id!==id);db(sb.from('visits').delete().eq('id',id));render()}}
+function delPatient(id){if(confirm('حذف المريض وكل زياراته ومواعيده نهائياً؟')){DB.patients=DB.patients.filter(p=>p.id!==id);DB.visits=DB.visits.filter(v=>v.pid!==id);DB.appts=DB.appts.filter(a=>a.pid!==id);db(sb.from('patients').delete().eq('id',id));go('patients')}}
+function setRecall(m){const p=P(pid);if(!m)p.recall='';else{const d=new Date();d.setMonth(d.getMonth()+m);p.recall=fmt(d)}db(sb.from('patients').update({recall:p.recall||null}).eq('id',pid));toast(m?'تم تحديد المتابعة':'تم إلغاء المتابعة');render()}
 
 function recallTag(r){if(!r)return '';const t=today();if(r<t)return '<span class="tag t-red">متأخر</span>';if(r<=addDays(t,7))return '<span class="tag t-amber">الأسبوع ده</span>';return ''}
 function recallList(){const e=addDays(today(),7);return DB.patients.filter(p=>p.recall&&p.recall<=e).sort((a,b)=>a.recall.localeCompare(b.recall))}
@@ -228,7 +298,7 @@ function recallTable(l){
  if(!l.length)return '<div class="empty">مفيش متابعات مستحقة 👌</div>';
  return `<table><tr><th>المريض</th><th>التليفون</th><th>موعد المتابعة</th><th>الحالة</th><th></th></tr>`+l.map(p=>`<tr><td><a href="#" onclick="go('profile','${p.id}');return false"><b>${esc(p.name)}</b></a></td><td>${dshow(p.phone)}</td><td>${dshow(p.recall)}</td><td>${recallTag(p.recall)}</td><td class="row"><a class="btn sm" href="tel:${esc(p.phone)}" style="text-decoration:none">📞 اتصل</a><button class="btn sm sec" onclick="recallDone('${p.id}')">تم التواصل</button></td></tr>`).join('')+'</table>';
 }
-function recallDone(id){const p=P(id);const d=new Date();d.setMonth(d.getMonth()+6);const s=prompt('موعد المتابعة الجاية (YYYY-MM-DD) - سيبها فاضية لو مفيش',fmt(d));if(s===null)return;p.recall=/^\d{4}-\d{2}-\d{2}$/.test(nd(s.trim()))?nd(s.trim()):'';save();toast('تم');render()}
+function recallDone(id){const p=P(id);const d=new Date();d.setMonth(d.getMonth()+6);const s=prompt('موعد المتابعة الجاية (YYYY-MM-DD) - سيبها فاضية لو مفيش',fmt(d));if(s===null)return;p.recall=/^\d{4}-\d{2}-\d{2}$/.test(nd(s.trim()))?nd(s.trim()):'';db(sb.from('patients').update({recall:p.recall||null}).eq('id',id));toast('تم');render()}
 function vRecall(){
  const t=today(),l=recallList(),o=l.filter(p=>p.recall<t),w=l.filter(p=>p.recall>=t);
  return `<div class="card"><h2>🔴 متأخرة (${o.length})</h2>${recallTable(o)}</div><div class="card"><h2>🟠 مستحقة خلال 7 أيام (${w.length})</h2>${recallTable(w)}</div>`;
@@ -247,14 +317,24 @@ function exportData(){
  const blob=new Blob([JSON.stringify({app:'clinic-mg',exported:new Date().toISOString(),...DB},null,1)],{type:'application/json'});
  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='clinic-backup-'+today()+'.json';document.body.appendChild(a);a.click();a.remove();toast('تم تنزيل النسخة الاحتياطية');
 }
+async function restoreAll(d){
+ toast('جاري الاسترجاع...');
+ const map={};const P2=d.patients.map(p=>{const n=uid();map[p.id]=n;return {id:n,...fromP({...p,firstVisit:p.firstVisit,recall:p.recall})}});
+ const V2=d.visits.filter(v=>map[v.pid]).map(v=>({id:uid(),...fromV({...v,pid:map[v.pid],date:v.date||today()})}));
+ const A2=(d.appts||[]).filter(a=>map[a.pid]).map(a=>({id:uid(),...fromA({...a,pid:map[a.pid]})}));
+ const ins=async(t,rows)=>{for(let i=0;i<rows.length;i+=200){const {error}=await sb.from(t).insert(rows.slice(i,i+200));if(error){alert('فشل الاسترجاع: '+error.message);return false}}return true};
+ if(!(await ins('patients',P2))||!(await ins('visits',V2))||!(await ins('appts',A2))){await loadAll();return}
+ await loadAll();toast('تم الاسترجاع (أُضيفت للبيانات الحالية)');go('dash');
+}
 function importData(inp){
  const f=inp.files[0];if(!f)return;const r=new FileReader();
  r.onload=()=>{try{const d=JSON.parse(r.result);if(!Array.isArray(d.patients)||!Array.isArray(d.visits))throw 0;
-  if(!confirm('هيتم استبدال كل البيانات الحالية ببيانات النسخة ('+d.patients.length+' مريض). تكمل؟')){inp.value='';return}
-  DB={patients:d.patients,visits:d.visits,appts:d.appts||[]};save();toast('تم الاسترجاع');go('dash')}catch(e){alert('الملف مش نسخة احتياطية صحيحة')}inp.value=''};
+  if(!confirm('هيتم إضافة بيانات النسخة ('+d.patients.length+' مريض) للبيانات الحالية على كل الأجهزة. تكمل؟')){inp.value='';return}
+  restoreAll(d);}catch(e){alert('الملف مش نسخة احتياطية صحيحة')}inp.value=''};
  r.readAsText(f);
 }
-render();
+document.getElementById('login').style.display='flex';
+sb.auth.getSession().then(({data})=>{if(data.session)startApp(data.session)});
 </script>
 </body>
 </html>
